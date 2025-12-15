@@ -137,4 +137,67 @@ const EditorArea: React.FC<EditorAreaProps> = ({
   );
 };
 
+// 非同期画像読み込みコンポーネント
+const ImageGridItem: React.FC<{ filePath: string; index: number }> = ({ filePath, index }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isInView, setIsInView] = useState(false);
+  const imgRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsInView(true);
+            observer.disconnect();
+          }
+        });
+      },
+      { rootMargin: '100px' }
+    );
+
+    if (imgRef.current) {
+      observer.observe(imgRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  const handleImageLoad = () => {
+    setIsLoaded(true);
+  };
+
+  return (
+    <div ref={imgRef} className="image-grid-item">
+      {isInView ? (
+        <>
+          <div className={`image-thumbnail-container ${isLoaded ? 'loaded' : ''}`}>
+            {!isLoaded && (
+              <div className="image-loading">
+                <div className="loading-spinner"></div>
+              </div>
+            )}
+            <img 
+              src={`file://${filePath}`} 
+              alt={path.basename(filePath)}
+              className="image-thumbnail"
+              onLoad={handleImageLoad}
+              style={{ opacity: isLoaded ? 1 : 0 }}
+            />
+          </div>
+          <div className="image-filename" title={filePath}>
+            {path.basename(filePath)}
+          </div>
+        </>
+      ) : (
+        <div className="image-thumbnail-container">
+          <div className="image-loading">
+            <div className="loading-spinner"></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default EditorArea;

@@ -9,7 +9,9 @@ interface SidebarProps {
   onPanelChange?: (panel: 'explorer' | 'search' | 'logs' | 'settings') => void;
   width?: number;
   onResize?: (width: number) => void;
-  onOpenSearchTab?: (query: string, results: string[]) => void;
+  onStartSearchTab?: (query: string) => string;
+  onUpdateSearchTab?: (tabId: string, results: string[]) => void;
+  onAddToSearchTab?: (tabId: string, results: string[]) => void;
 }
 
 interface FileNode {
@@ -20,7 +22,7 @@ interface FileNode {
   isExpanded?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onFileSelect, activePanel, onPanelChange, width = 300, onResize, onOpenSearchTab }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onFileSelect, activePanel, onPanelChange, width = 300, onResize, onStartSearchTab, onUpdateSearchTab, onAddToSearchTab }) => {
   const [activeTab, setActiveTab] = useState<'explorer' | 'search' | 'logs' | 'settings'>(activePanel || 'explorer');
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -109,7 +111,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onFileSelect, activePanel, onPanelCha
       </div>
       <div className="sidebar-content">
         {activeTab === 'explorer' && <FileExplorer onFileSelect={onFileSelect} />}
-        {activeTab === 'search' && <SearchPanel onFileSelect={onFileSelect} onOpenSearchTab={onOpenSearchTab} />}
+        {activeTab === 'search' && <SearchPanel onFileSelect={onFileSelect} onStartSearchTab={onStartSearchTab} onUpdateSearchTab={onUpdateSearchTab} onAddToSearchTab={onAddToSearchTab} />}
         {activeTab === 'logs' && <SystemLogs />}
         {activeTab === 'settings' && <SystemSettings />}
       </div>
@@ -267,12 +269,17 @@ const FileExplorer: React.FC<{ onFileSelect: (file: string) => void }> = ({ onFi
   );
 };
 
-const SearchPanel: React.FC<{ onFileSelect: (file: string) => void; onOpenSearchTab?: (query: string, results: string[]) => void }> = ({ onFileSelect, onOpenSearchTab }) => {
+const SearchPanel: React.FC<{ 
+  onFileSelect: (file: string) => void; 
+  onStartSearchTab?: (query: string) => string;
+  onUpdateSearchTab?: (tabId: string, results: string[]) => void;
+  onAddToSearchTab?: (tabId: string, results: string[]) => void;
+}> = ({ onFileSelect, onStartSearchTab, onUpdateSearchTab, onAddToSearchTab }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchPath, setSearchPath] = useState('I:\\design★');
   const [searchResults, setSearchResults] = useState<Array<{ file: string; line: number; content: string }>>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [showInTab, setShowInTab] = useState(false);
+  const [showInTab, setShowInTab] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { ipcRenderer } = window.require('electron');
@@ -292,15 +299,30 @@ const SearchPanel: React.FC<{ onFileSelect: (file: string) => void; onOpenSearch
     setIsSearching(true);
     setSearchResults([]);
 
+    // タブで開くが有効な場合、先に空のタブを作成
+    let tabId: string | undefined;
+    if (showInTab && onStartSearchTab) {
+      tabId = onStartSearchTab(searchQuery);
+    }
+
     try {
       // メインプロセスで検索を実行
       const results = await ipcRenderer.invoke('search-files', searchPath, searchQuery);
       setSearchResults(results);
       
-      // タブで開くが有効な場合、新しいタブを開く
-      if (showInTab && onOpenSearchTab && results.length > 0) {
+      // タブで開く場合、結果を段階的に追加
+      if (showInTab && tabId && onAddToSearchTab && results.length > 0) {
         const filePaths = results.map((r: any) => r.file);
-        onOpenSearchTab(searchQuery, filePaths);
+        const BATCH_SIZE = 20; // 一度に20枚ずつ追加
+        
+        for (let i = 0; i < filePaths.length; i += BATCH_SIZE) {
+          const batch = filePaths.slice(i, i + BATCH_SIZE);
+          onAddToSearchTab(tabId, batch);
+          // 次のバッチまで少し待つ（レンダリングをスムーズに）
+          if (i + BATCH_SIZE < filePaths.length) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }
       }
     } catch (error) {
       console.error('Search error:', error);

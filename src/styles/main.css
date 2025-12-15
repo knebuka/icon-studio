@@ -689,11 +689,73 @@ body {
     border-color: #007acc;
 }
 
+.image-thumbnail-container {
+    width: 100%;
+    height: 200px;
+    position: relative;
+    background-color: #1e1e1e;
+    overflow: hidden;
+}
+
+.image-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #252526;
+}
+
+.loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid #3c3c3c;
+    border-top-color: #007acc;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .image-thumbnail {
     width: 100%;
     height: 200px;
     object-fit: cover;
     background-color: #1e1e1e;
+    transition: opacity 0.3s ease-in-out;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+.image-grid-item {
+    display: flex;
+    flex-direction: column;
+    background-color: #252526;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #3c3c3c;
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .image-filename {

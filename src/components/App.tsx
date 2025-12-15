@@ -22,15 +22,32 @@ const App: React.FC = () => {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
 
-  const handleOpenSearchTab = (searchQuery: string, results: string[]) => {
+  const handleStartSearchTab = (searchQuery: string): string => {
     const newTab: Tab = {
       id: `search-${Date.now()}`,
       type: 'search',
       title: `検索: ${searchQuery}`,
-      content: results
+      content: []
     };
     setTabs(prev => [...prev, newTab]);
     setActiveTabId(newTab.id);
+    return newTab.id;
+  };
+
+  const handleUpdateSearchTab = (tabId: string, results: string[]) => {
+    setTabs(prev => prev.map(tab => 
+      tab.id === tabId 
+        ? { ...tab, content: results }
+        : tab
+    ));
+  };
+
+  const handleAddToSearchTab = (tabId: string, newResults: string[]) => {
+    setTabs(prev => prev.map(tab => 
+      tab.id === tabId && Array.isArray(tab.content)
+        ? { ...tab, content: [...tab.content, ...newResults] }
+        : tab
+    ));
   };
 
   const handleCloseTab = (tabId: string) => {
@@ -70,7 +87,9 @@ const App: React.FC = () => {
           onPanelChange={setActivePanel}
           width={sidebarWidth}
           onResize={setSidebarWidth}
-          onOpenSearchTab={handleOpenSearchTab}
+          onStartSearchTab={handleStartSearchTab}
+          onUpdateSearchTab={handleUpdateSearchTab}
+          onAddToSearchTab={handleAddToSearchTab}
         />
         <EditorArea 
           selectedFile={selectedFile}

@@ -9,7 +9,9 @@
 		"build:main": "webpack --config webpack.main.config.js",
 		"build:renderer": "webpack --config webpack.renderer.config.js",
 		"package": "npm run build && electron-builder",
-		"dev": "concurrently --kill-others --success first \"npm run build:main -- --watch\" \"npm run build:renderer -- --watch\" \"wait-on dist/main.js dist/renderer.js && electron .\""
+		"dev": "concurrently --kill-others --success first \"npm run build:main -- --watch\" \"npm run build:renderer -- --watch\" \"wait-on dist/main.js dist/renderer.js && electron .\"",
+		"clean": "rimraf dist node_modules/.cache",
+		"clean:dev": "npm run clean && npm run dev"
 	},
 	"keywords": [
 		"icon",
