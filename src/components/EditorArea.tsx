@@ -1,14 +1,37 @@
 import React, { useRef, useEffect, useState } from 'react';
 
-interface EditorAreaProps {
-  selectedFile: string | null;
+const path = window.require('path');
+
+interface Tab {
+  id: string;
+  type: 'file' | 'search';
+  title: string;
+  content?: string | string[];
 }
 
-const EditorArea: React.FC<EditorAreaProps> = ({ selectedFile }) => {
+interface EditorAreaProps {
+  selectedFile: string | null;
+  tabs?: Tab[];
+  activeTabId?: string | null;
+  onTabChange?: (tabId: string) => void;
+  onTabClose?: (tabId: string) => void;
+}
+
+const EditorArea: React.FC<EditorAreaProps> = ({ 
+  selectedFile, 
+  tabs = [], 
+  activeTabId, 
+  onTabChange, 
+  onTabClose 
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(100);
 
+  const activeTab = tabs.find(tab => tab.id === activeTabId);
+
   useEffect(() => {
+    if (activeTab?.type === 'search') return; // 検索タブの場合はキャンバスを使わない
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -42,32 +65,74 @@ const EditorArea: React.FC<EditorAreaProps> = ({ selectedFile }) => {
       ctx.font = '16px sans-serif';
       ctx.fillText(`編集中: ${selectedFile}`, 20, 30);
     }
-  }, [selectedFile]);
+  }, [selectedFile, activeTab]);
+
+  const renderSearchResults = () => {
+    if (!activeTab || activeTab.type !== 'search' || !Array.isArray(activeTab.content)) {
+      return null;
+    }
+
+    return (
+      <div className="search-results-tab">
+        <div className="search-results-header">
+          <h3>{activeTab.title}</h3>
+          <p>{activeTab.content.length} 件の画像</p>
+        </div>
+        <div className="image-grid">
+          {activeTab.content.map((filePath, index) => (
+            <ImageGridItem 
+              key={index} 
+              filePath={filePath}
+              index={index}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="editor-area">
       <div className="editor-tabs">
-        {selectedFile && (
-          <div className="editor-tab active">
-            <span>{selectedFile}</span>
-            <button className="tab-close">×</button>
+        {tabs.map(tab => (
+          <div 
+            key={tab.id}
+            className={`editor-tab ${activeTabId === tab.id ? 'active' : ''}`}
+            onClick={() => onTabChange?.(tab.id)}
+          >
+            <span>{tab.title}</span>
+            <button 
+              className="tab-close"
+              onClick={(e) => {
+                e.stopPropagation();
+                onTabClose?.(tab.id);
+              }}
+            >
+              ×
+            </button>
           </div>
-        )}
+        ))}
       </div>
-      <div className="editor-controls">
-        <button onClick={() => setZoom(Math.max(10, zoom - 10))}>−</button>
-        <span className="zoom-level">{zoom}%</span>
-        <button onClick={() => setZoom(Math.min(500, zoom + 10))}>+</button>
-      </div>
-      <div className="canvas-container">
-        <canvas
-          ref={canvasRef}
-          width={800}
-          height={600}
-          className="editor-canvas"
-          style={{ transform: `scale(${zoom / 100})` }}
-        />
-      </div>
+      {activeTab?.type === 'search' ? (
+        renderSearchResults()
+      ) : (
+        <>
+          <div className="editor-controls">
+            <button onClick={() => setZoom(Math.max(10, zoom - 10))}>−</button>
+            <span className="zoom-level">{zoom}%</span>
+            <button onClick={() => setZoom(Math.min(500, zoom + 10))}>+</button>
+          </div>
+          <div className="canvas-container">
+            <canvas
+              ref={canvasRef}
+              width={800}
+              height={600}
+              className="editor-canvas"
+              style={{ transform: `scale(${zoom / 100})` }}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 };

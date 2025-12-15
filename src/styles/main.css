@@ -138,9 +138,16 @@ body {
     color: #858585;
     padding: 12px;
     cursor: pointer;
-    font-size: 20px;
     border-left: 2px solid transparent;
     transition: color 0.2s, border-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-tab svg {
+    width: 24px;
+    height: 24px;
 }
 
 .sidebar-tab:hover {
@@ -277,6 +284,35 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
+}
+
+.search-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.search-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #cccccc;
+    user-select: none;
+}
+
+.search-toggle input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    accent-color: #007acc;
+}
+
+.search-toggle-label {
+    font-size: 11px;
+    color: #cccccc;
 }
 
 .search-input-group {
@@ -601,6 +637,73 @@ body {
     border: 1px solid #3c3c3c;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     transform-origin: center;
+}
+
+/* Search Results Tab */
+.search-results-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #1e1e1e;
+    overflow: auto;
+}
+
+.search-results-tab .search-results-header {
+    padding: 16px 20px;
+    background-color: #252526;
+    border-bottom: 1px solid #2d2d30;
+}
+
+.search-results-tab h3 {
+    font-size: 18px;
+    color: #cccccc;
+    margin-bottom: 6px;
+}
+
+.search-results-tab p {
+    font-size: 13px;
+    color: #858585;
+}
+
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    padding: 20px;
+}
+
+.image-grid-item {
+    display: flex;
+    flex-direction: column;
+    background-color: #252526;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #3c3c3c;
+}
+
+.image-grid-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    border-color: #007acc;
+}
+
+.image-thumbnail {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    background-color: #1e1e1e;
+}
+
+.image-filename {
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #cccccc;
+    background-color: #2d2d2d;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Status Bar */

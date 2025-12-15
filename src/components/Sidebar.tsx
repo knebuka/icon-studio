@@ -9,6 +9,7 @@ interface SidebarProps {
   onPanelChange?: (panel: 'explorer' | 'search' | 'logs' | 'settings') => void;
   width?: number;
   onResize?: (width: number) => void;
+  onOpenSearchTab?: (query: string, results: string[]) => void;
 }
 
 interface FileNode {
@@ -19,7 +20,7 @@ interface FileNode {
   isExpanded?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onFileSelect, activePanel, onPanelChange, width = 300, onResize }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onFileSelect, activePanel, onPanelChange, width = 300, onResize, onOpenSearchTab }) => {
   const [activeTab, setActiveTab] = useState<'explorer' | 'search' | 'logs' | 'settings'>(activePanel || 'explorer');
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -69,33 +70,46 @@ const Sidebar: React.FC<SidebarProps> = ({ onFileSelect, activePanel, onPanelCha
           onClick={() => handleTabChange('explorer')}
           title="エクスプローラ"
         >
-          📁
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+          </svg>
         </button>
         <button
           className={`sidebar-tab ${activeTab === 'search' ? 'active' : ''}`}
           onClick={() => handleTabChange('search')}
           title="検索"
         >
-          🔍
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
         </button>
         <button
           className={`sidebar-tab ${activeTab === 'logs' ? 'active' : ''}`}
           onClick={() => handleTabChange('logs')}
           title="システムログ"
         >
-          📋
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="9" y1="15" x2="15" y2="15"/>
+            <line x1="9" y1="11" x2="15" y2="11"/>
+          </svg>
         </button>
         <button
           className={`sidebar-tab ${activeTab === 'settings' ? 'active' : ''}`}
           onClick={() => handleTabChange('settings')}
           title="システム設定"
         >
-          ⚙️
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+          </svg>
         </button>
       </div>
       <div className="sidebar-content">
         {activeTab === 'explorer' && <FileExplorer onFileSelect={onFileSelect} />}
-        {activeTab === 'search' && <SearchPanel onFileSelect={onFileSelect} />}
+        {activeTab === 'search' && <SearchPanel onFileSelect={onFileSelect} onOpenSearchTab={onOpenSearchTab} />}
         {activeTab === 'logs' && <SystemLogs />}
         {activeTab === 'settings' && <SystemSettings />}
       </div>
@@ -253,11 +267,12 @@ const FileExplorer: React.FC<{ onFileSelect: (file: string) => void }> = ({ onFi
   );
 };
 
-const SearchPanel: React.FC<{ onFileSelect: (file: string) => void }> = ({ onFileSelect }) => {
+const SearchPanel: React.FC<{ onFileSelect: (file: string) => void; onOpenSearchTab?: (query: string, results: string[]) => void }> = ({ onFileSelect, onOpenSearchTab }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchPath, setSearchPath] = useState('I:\\design★');
   const [searchResults, setSearchResults] = useState<Array<{ file: string; line: number; content: string }>>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [showInTab, setShowInTab] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { ipcRenderer } = window.require('electron');
@@ -281,6 +296,12 @@ const SearchPanel: React.FC<{ onFileSelect: (file: string) => void }> = ({ onFil
       // メインプロセスで検索を実行
       const results = await ipcRenderer.invoke('search-files', searchPath, searchQuery);
       setSearchResults(results);
+      
+      // タブで開くが有効な場合、新しいタブを開く
+      if (showInTab && onOpenSearchTab && results.length > 0) {
+        const filePaths = results.map((r: any) => r.file);
+        onOpenSearchTab(searchQuery, filePaths);
+      }
     } catch (error) {
       console.error('Search error:', error);
     } finally {
@@ -300,7 +321,17 @@ const SearchPanel: React.FC<{ onFileSelect: (file: string) => void }> = ({ onFil
 
   return (
     <div className="search-panel">
-      <div className="section-title">検索</div>
+      <div className="search-header">
+        <div className="section-title">検索</div>
+        <label className="search-toggle">
+          <input
+            type="checkbox"
+            checked={showInTab}
+            onChange={(e) => setShowInTab(e.target.checked)}
+          />
+          <span className="search-toggle-label">タブで開く</span>
+        </label>
+      </div>
       <div className="search-input-group">
         <input
           ref={inputRef}
