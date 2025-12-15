@@ -1,10 +1,14 @@
 import React from 'react';
 
-const StatusBar: React.FC = () => {
+interface StatusBarProps {
+  isAdmin?: boolean;
+}
+
+const StatusBar: React.FC<StatusBarProps> = ({ isAdmin = false }) => {
   return (
-    <div className="status-bar">
+    <div className={`status-bar ${isAdmin ? 'status-bar-admin' : ''}`}>
       <div className="status-left">
-        <span>準備完了</span>
+        <span>{isAdmin ? '🔧 管理者モード' : '準備完了'}</span>
       </div>
       <div className="status-right">
         <span>位置: 0, 0</span>

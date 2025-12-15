@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const fs = window.require('fs');
 const path = window.require('path');
 
 interface SidebarProps {
   onFileSelect: (file: string) => void;
+  activePanel?: 'explorer' | 'search' | 'logs' | 'settings';
+  onPanelChange?: (panel: 'explorer' | 'search' | 'logs' | 'settings') => void;
 }
 
 interface FileNode {
@@ -15,29 +17,49 @@ interface FileNode {
   isExpanded?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onFileSelect }) => {
-  const [activeTab, setActiveTab] = useState<'explorer' | 'logs' | 'settings'>('explorer');
+const Sidebar: React.FC<SidebarProps> = ({ onFileSelect, activePanel, onPanelChange }) => {
+  const [activeTab, setActiveTab] = useState<'explorer' | 'search' | 'logs' | 'settings'>(activePanel || 'explorer');
+
+  useEffect(() => {
+    if (activePanel) {
+      setActiveTab(activePanel);
+    }
+  }, [activePanel]);
+
+  const handleTabChange = (tab: 'explorer' | 'search' | 'logs' | 'settings') => {
+    setActiveTab(tab);
+    if (onPanelChange) {
+      onPanelChange(tab);
+    }
+  };
 
   return (
     <div className="sidebar">
       <div className="sidebar-tabs">
         <button
           className={`sidebar-tab ${activeTab === 'explorer' ? 'active' : ''}`}
-          onClick={() => setActiveTab('explorer')}
+          onClick={() => handleTabChange('explorer')}
           title="エクスプローラ"
         >
           📁
         </button>
         <button
+          className={`sidebar-tab ${activeTab === 'search' ? 'active' : ''}`}
+          onClick={() => handleTabChange('search')}
+          title="検索"
+        >
+          🔍
+        </button>
+        <button
           className={`sidebar-tab ${activeTab === 'logs' ? 'active' : ''}`}
-          onClick={() => setActiveTab('logs')}
+          onClick={() => handleTabChange('logs')}
           title="システムログ"
         >
           📋
         </button>
         <button
           className={`sidebar-tab ${activeTab === 'settings' ? 'active' : ''}`}
-          onClick={() => setActiveTab('settings')}
+          onClick={() => handleTabChange('settings')}
           title="システム設定"
         >
           ⚙️
@@ -45,6 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onFileSelect }) => {
       </div>
       <div className="sidebar-content">
         {activeTab === 'explorer' && <FileExplorer onFileSelect={onFileSelect} />}
+        {activeTab === 'search' && <SearchPanel onFileSelect={onFileSelect} />}
         {activeTab === 'logs' && <SystemLogs />}
         {activeTab === 'settings' && <SystemSettings />}
       </div>
@@ -193,6 +216,110 @@ const FileExplorer: React.FC<{ onFileSelect: (file: string) => void }> = ({ onFi
       )}
       <div className="file-list">
         {fileTree.map(node => renderFileNode(node))}
+      </div>
+    </div>
+  );
+};
+
+const SearchPanel: React.FC<{ onFileSelect: (file: string) => void }> = ({ onFileSelect }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchPath, setSearchPath] = useState('I:\\design★');
+  const [searchResults, setSearchResults] = useState<Array<{ file: string; line: number; content: string }>>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const { ipcRenderer } = window.require('electron');
+
+  useEffect(() => {
+    // フォーカスを検索入力欄に合わせる
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchResults([]);
+
+    try {
+      // メインプロセスで検索を実行
+      const results = await ipcRenderer.invoke('search-files', searchPath, searchQuery);
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  const handleResultClick = (filePath: string) => {
+    onFileSelect(filePath);
+  };
+
+  return (
+    <div className="search-panel">
+      <div className="section-title">検索</div>
+      <div className="search-input-group">
+        <input
+          ref={inputRef}
+          type="text"
+          className="search-input"
+          placeholder="検索ワードを入力..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyPress={handleKeyPress}
+        />
+        <button className="search-button" onClick={handleSearch} disabled={isSearching}>
+          {isSearching ? '⏳' : '🔍'}
+        </button>
+      </div>
+      <div className="search-path-group">
+        <input
+          type="text"
+          className="search-path-input"
+          placeholder="検索パス"
+          value={searchPath}
+          onChange={(e) => setSearchPath(e.target.value)}
+        />
+      </div>
+      <div className="search-results">
+        {searchResults.length > 0 && (
+          <div className="search-results-header">
+            {searchResults.length} 件の結果
+          </div>
+        )}
+        <div className="search-results-list">
+          {searchResults.map((result, index) => (
+            <div
+              key={index}
+              className="search-result-item"
+              onClick={() => handleResultClick(result.file)}
+            >
+              <div className="search-result-file">
+                📄 {path.basename(result.file)}
+              </div>
+              <div className="search-result-path">
+                {result.file}
+              </div>
+              <div className="search-result-line">
+                {result.line}: {result.content}
+              </div>
+            </div>
+          ))}
+        </div>
+        {!isSearching && searchResults.length === 0 && searchQuery && (
+          <div className="search-no-results">結果が見つかりませんでした</div>
+        )}
       </div>
     </div>
   );
