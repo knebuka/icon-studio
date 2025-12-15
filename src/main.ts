@@ -23,11 +23,6 @@ function createWindow() {
 	// Load the index.html
 	mainWindow.loadFile(path.join(__dirname, "index.html"));
 
-	// Open DevTools in development
-	if (process.env.NODE_ENV === "development") {
-		mainWindow.webContents.openDevTools();
-	}
-
 	mainWindow.on("closed", () => {
 		mainWindow = null;
 	});

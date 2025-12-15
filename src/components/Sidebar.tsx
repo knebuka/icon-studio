@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from 'react';
 
+const fs = window.require('fs');
+const path = window.require('path');
+
 interface SidebarProps {
   onFileSelect: (file: string) => void;
+}
+
+interface FileNode {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  children?: FileNode[];
+  isExpanded?: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ onFileSelect }) => {
@@ -44,26 +55,144 @@ const Sidebar: React.FC<SidebarProps> = ({ onFileSelect }) => {
 const FileExplorer: React.FC<{ onFileSelect: (file: string) => void }> = ({ onFileSelect }) => {
   const defaultPath = 'I:\\design★';
   const [currentPath, setCurrentPath] = useState(defaultPath);
-  const [files] = useState<string[]>(['icon1.svg', 'icon2.svg', 'logo.png']);
+  const [fileTree, setFileTree] = useState<FileNode[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadDirectory = (dirPath: string): FileNode[] => {
+    try {
+      if (!fs.existsSync(dirPath)) {
+        setError(`パスが存在しません: ${dirPath}`);
+        return [];
+      }
+
+      const items = fs.readdirSync(dirPath);
+      const nodes: FileNode[] = [];
+
+      for (const item of items) {
+        const fullPath = path.join(dirPath, item);
+        try {
+          const stats = fs.statSync(fullPath);
+          nodes.push({
+            name: item,
+            path: fullPath,
+            isDirectory: stats.isDirectory(),
+            isExpanded: false,
+            children: []
+          });
+        } catch (err) {
+          // Skip files we can't access
+          console.warn(`Cannot access: ${fullPath}`);
+        }
+      }
+
+      // Sort: directories first, then files
+      nodes.sort((a, b) => {
+        if (a.isDirectory === b.isDirectory) {
+          return a.name.localeCompare(b.name);
+        }
+        return a.isDirectory ? -1 : 1;
+      });
+
+      setError(null);
+      return nodes;
+    } catch (err: any) {
+      setError(`エラー: ${err.message}`);
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    const nodes = loadDirectory(currentPath);
+    setFileTree(nodes);
+  }, [currentPath]);
+
+  const toggleDirectory = (node: FileNode) => {
+    if (!node.isDirectory) {
+      onFileSelect(node.path);
+      return;
+    }
+
+    const updateTree = (nodes: FileNode[]): FileNode[] => {
+      return nodes.map(n => {
+        if (n.path === node.path) {
+          const isExpanded = !n.isExpanded;
+          return {
+            ...n,
+            isExpanded,
+            children: isExpanded ? loadDirectory(n.path) : []
+          };
+        }
+        if (n.children && n.children.length > 0) {
+          return { ...n, children: updateTree(n.children) };
+        }
+        return n;
+      });
+    };
+
+    setFileTree(updateTree(fileTree));
+  };
+
+  const renderFileNode = (node: FileNode, level: number = 0): JSX.Element => {
+    const icon = node.isDirectory 
+      ? (node.isExpanded ? '📂' : '📁')
+      : getFileIcon(node.name);
+
+    return (
+      <div key={node.path}>
+        <div
+          className="file-item"
+          style={{ paddingLeft: `${8 + level * 16}px` }}
+          onClick={() => toggleDirectory(node)}
+        >
+          {node.isDirectory && (
+            <span className="expand-icon">
+              {node.isExpanded ? '▼' : '▶'}
+            </span>
+          )}
+          <span className="file-icon">{icon}</span>
+          <span className="file-name">{node.name}</span>
+        </div>
+        {node.isExpanded && node.children && (
+          <div className="file-children">
+            {node.children.map(child => renderFileNode(child, level + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const getFileIcon = (fileName: string): string => {
+    const ext = path.extname(fileName).toLowerCase();
+    switch (ext) {
+      case '.svg': return '🎨';
+      case '.png': case '.jpg': case '.jpeg': case '.gif': return '🖼️';
+      case '.ico': return '🔲';
+      case '.pdf': return '📕';
+      case '.txt': return '📝';
+      case '.json': return '⚙️';
+      default: return '📄';
+    }
+  };
+
+  const handlePathChange = () => {
+    const newPath = prompt('新しいパスを入力してください:', currentPath);
+    if (newPath && newPath.trim()) {
+      setCurrentPath(newPath.trim());
+    }
+  };
 
   return (
     <div className="file-explorer">
       <div className="section-title">エクスプローラ</div>
-      <div className="current-path">
+      <div className="current-path" onClick={handlePathChange} title="クリックしてパスを変更">
         <span className="path-label">📂</span>
         <span className="path-text">{currentPath}</span>
       </div>
+      {error && (
+        <div className="explorer-error">{error}</div>
+      )}
       <div className="file-list">
-        {files.map((file, index) => (
-          <div
-            key={index}
-            className="file-item"
-            onClick={() => onFileSelect(file)}
-          >
-            <span className="file-icon">📄</span>
-            <span className="file-name">{file}</span>
-          </div>
-        ))}
+        {fileTree.map(node => renderFileNode(node))}
       </div>
     </div>
   );
