@@ -7,6 +7,8 @@ interface SidebarProps {
   onFileSelect: (file: string) => void;
   activePanel?: 'explorer' | 'search' | 'logs' | 'settings';
   onPanelChange?: (panel: 'explorer' | 'search' | 'logs' | 'settings') => void;
+  width?: number;
+  onResize?: (width: number) => void;
 }
 
 interface FileNode {
@@ -17,8 +19,34 @@ interface FileNode {
   isExpanded?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onFileSelect, activePanel, onPanelChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onFileSelect, activePanel, onPanelChange, width = 300, onResize }) => {
   const [activeTab, setActiveTab] = useState<'explorer' | 'search' | 'logs' | 'settings'>(activePanel || 'explorer');
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing || !onResize) return;
+      const newWidth = e.clientX - 48;
+      if (newWidth >= 200 && newWidth <= 600) {
+        onResize(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, onResize]);
 
   useEffect(() => {
     if (activePanel) {
@@ -34,7 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onFileSelect, activePanel, onPanelCha
   };
 
   return (
-    <div className="sidebar">
+    <div className="sidebar" ref={sidebarRef} style={{ width: `${width}px` }}>
       <div className="sidebar-tabs">
         <button
           className={`sidebar-tab ${activeTab === 'explorer' ? 'active' : ''}`}
@@ -71,6 +99,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onFileSelect, activePanel, onPanelCha
         {activeTab === 'logs' && <SystemLogs />}
         {activeTab === 'settings' && <SystemSettings />}
       </div>
+      <div 
+        className="sidebar-resize-handle"
+        onMouseDown={() => setIsResizing(true)}
+      />
     </div>
   );
 };
@@ -304,16 +336,10 @@ const SearchPanel: React.FC<{ onFileSelect: (file: string) => void }> = ({ onFil
               key={index}
               className="search-result-item"
               onClick={() => handleResultClick(result.file)}
+              title={result.file}
             >
-              <div className="search-result-file">
-                📄 {path.basename(result.file)}
-              </div>
-              <div className="search-result-path">
-                {result.file}
-              </div>
-              <div className="search-result-line">
-                {result.line}: {result.content}
-              </div>
+              <span className="search-result-icon">📄</span>
+              <span className="search-result-filename">{path.basename(result.file)}</span>
             </div>
           ))}
         </div>

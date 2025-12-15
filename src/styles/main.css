@@ -119,7 +119,7 @@ body {
 /* Sidebar */
 .sidebar {
     display: flex;
-    width: 300px;
+    position: relative;
     background-color: #252526;
     border-right: 1px solid #2d2d30;
 }
@@ -157,6 +157,21 @@ body {
     flex: 1;
     overflow-y: auto;
     padding: 10px;
+}
+
+.sidebar-resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    cursor: ew-resize;
+    background-color: transparent;
+    transition: background-color 0.2s;
+}
+
+.sidebar-resize-handle:hover {
+    background-color: #007acc;
 }
 
 .section-title {
@@ -346,7 +361,10 @@ body {
 }
 
 .search-result-item {
-    padding: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
     background-color: #1e1e1e;
     border-radius: 3px;
     cursor: pointer;
@@ -358,29 +376,14 @@ body {
     background-color: #2a2d2e;
 }
 
-.search-result-file {
+.search-result-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.search-result-filename {
     font-size: 13px;
     color: #cccccc;
-    font-weight: 500;
-    margin-bottom: 4px;
-}
-
-.search-result-path {
-    font-size: 11px;
-    color: #858585;
-    margin-bottom: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.search-result-line {
-    font-size: 12px;
-    color: #cccccc;
-    font-family: 'Consolas', 'Courier New', monospace;
-    background-color: #252526;
-    padding: 4px 6px;
-    border-radius: 2px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

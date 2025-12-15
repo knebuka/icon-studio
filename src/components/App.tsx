@@ -11,6 +11,7 @@ const App: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<'explorer' | 'search' | 'logs' | 'settings'>('explorer');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(300);
 
   useEffect(() => {
     // Check if running as admin
@@ -40,6 +41,8 @@ const App: React.FC = () => {
           onFileSelect={setSelectedFile} 
           activePanel={activePanel}
           onPanelChange={setActivePanel}
+          width={sidebarWidth}
+          onResize={setSidebarWidth}
         />
         <EditorArea selectedFile={selectedFile} />
       </div>
