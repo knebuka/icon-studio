@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
+import SecondarySidebar from './SecondarySidebar';
 import EditorArea from './EditorArea';
 import TitleBar from './TitleBar';
 import StatusBar from './StatusBar';
@@ -19,6 +20,7 @@ const App: React.FC = () => {
   const [activePanel, setActivePanel] = useState<'explorer' | 'search' | 'logs' | 'settings'>('explorer');
   const [isAdmin, setIsAdmin] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(300);
+  const [secondarySidebarWidth, setSecondarySidebarWidth] = useState(300);
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
 
@@ -97,6 +99,10 @@ const App: React.FC = () => {
           activeTabId={activeTabId}
           onTabChange={setActiveTabId}
           onTabClose={handleCloseTab}
+        />
+        <SecondarySidebar 
+          width={secondarySidebarWidth}
+          onResize={setSecondarySidebarWidth}
         />
       </div>
       {isAdmin && <DebugLog />}

@@ -6,6 +6,52 @@ import { exec } from "child_process";
 let mainWindow: BrowserWindow | null = null;
 let isAdmin = true; // 開発中は常にtrue
 
+// Midjourney client (lazy initialization)
+let midjourneyClient: any = null;
+
+async function initializeMidjourney() {
+	if (midjourneyClient) return midjourneyClient;
+
+	try {
+		const { Midjourney } = require("midjourney");
+
+		// Load environment variables from .env file if it exists
+		const envPath = path.join(__dirname, "../.env");
+		if (fs.existsSync(envPath)) {
+			const envContent = fs.readFileSync(envPath, "utf-8");
+			envContent.split("\n").forEach((line) => {
+				const match = line.match(/^([^=]+)=(.*)$/);
+				if (match) {
+					process.env[match[1].trim()] = match[2].trim();
+				}
+			});
+		}
+
+		const serverId = process.env.DISCORD_SERVER_ID || "";
+		const channelId = process.env.DISCORD_CHANNEL_ID || "";
+		const salaiToken = process.env.DISCORD_BOT_TOKEN || "";
+
+		if (!serverId || !channelId || !salaiToken) {
+			sendLog("error", "Midjourney configuration missing. Please set DISCORD_SERVER_ID, DISCORD_CHANNEL_ID, and DISCORD_BOT_TOKEN in .env file");
+			return null;
+		}
+
+		midjourneyClient = new Midjourney({
+			ServerId: serverId,
+			ChannelId: channelId,
+			SalaiToken: salaiToken,
+			Debug: true,
+			Ws: true,
+		});
+
+		sendLog("info", "Midjourney client initialized");
+		return midjourneyClient;
+	} catch (error: any) {
+		sendLog("error", `Failed to initialize Midjourney: ${error.message}`);
+		return null;
+	}
+}
+
 // Check if running as administrator
 function checkIsAdmin(): Promise<boolean> {
 	// 開発中は常にtrueを返す
@@ -160,6 +206,81 @@ ipcMain.handle("search-files", async (event, searchPath: string, query: string) 
 			}
 		});
 	});
+});
+
+// Midjourney image generation
+ipcMain.handle("midjourney-generate", async (event, prompt: string, params: any) => {
+	try {
+		sendLog("info", `Starting Midjourney generation: ${prompt}`);
+
+		const client = await initializeMidjourney();
+		if (!client) {
+			return { success: false, error: "Midjourney client not initialized" };
+		}
+
+		// Build the full prompt with parameters
+		let fullPrompt = prompt;
+		if (params.aspectRatio && params.aspectRatio !== "1:1") {
+			fullPrompt += ` --ar ${params.aspectRatio}`;
+		}
+		if (params.model) {
+			fullPrompt += ` --v ${params.model}`;
+		}
+
+		sendLog("debug", `Full prompt: ${fullPrompt}`);
+
+		// Send to Midjourney
+		const result = await client.Imagine(fullPrompt, (uri: string, progress: string) => {
+			// Progress callback
+			sendLog("debug", `Generation progress: ${progress}`);
+			if (mainWindow) {
+				mainWindow.webContents.send("midjourney-progress", { uri, progress });
+			}
+		});
+
+		if (result) {
+			sendLog("info", `Generation completed successfully`);
+			return {
+				success: true,
+				imageUrl: result.uri,
+				id: result.id,
+				hash: result.hash,
+			};
+		} else {
+			sendLog("error", "Generation failed: No result returned");
+			return { success: false, error: "No result returned" };
+		}
+	} catch (error: any) {
+		sendLog("error", `Midjourney generation failed: ${error.message}`);
+		return { success: false, error: error.message };
+	}
+});
+
+// Midjourney upscale
+ipcMain.handle("midjourney-upscale", async (event, index: number, messageId: string, messageHash: string) => {
+	try {
+		const client = await initializeMidjourney();
+		if (!client) {
+			return { success: false, error: "Midjourney client not initialized" };
+		}
+
+		sendLog("info", `Upscaling image ${index}`);
+		const result = await client.Upscale({
+			index,
+			msgId: messageId,
+			hash: messageHash,
+			flags: 0,
+		});
+
+		if (result) {
+			return { success: true, imageUrl: result.uri };
+		} else {
+			return { success: false, error: "Upscale failed" };
+		}
+	} catch (error: any) {
+		sendLog("error", `Upscale failed: ${error.message}`);
+		return { success: false, error: error.message };
+	}
 });
 
 app.on("ready", async () => {

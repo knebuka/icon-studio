@@ -181,6 +181,82 @@ body {
     background-color: #007acc;
 }
 
+/* Secondary Sidebar */
+.secondary-sidebar {
+    display: flex;
+    position: relative;
+    background-color: #252526;
+    border-left: 1px solid #2d2d30;
+}
+
+.secondary-sidebar-resize-handle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    cursor: ew-resize;
+    background-color: transparent;
+    transition: background-color 0.2s;
+    z-index: 10;
+}
+
+.secondary-sidebar-resize-handle:hover {
+    background-color: #007acc;
+}
+
+.secondary-sidebar-tabs {
+    display: flex;
+    flex-direction: column;
+    width: 48px;
+    background-color: #333333;
+    border-left: 1px solid #2d2d30;
+    order: 2;
+}
+
+.secondary-sidebar-tab {
+    background: transparent;
+    border: none;
+    color: #858585;
+    padding: 12px;
+    cursor: pointer;
+    border-right: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.secondary-sidebar-tab svg {
+    width: 24px;
+    height: 24px;
+}
+
+.secondary-sidebar-tab:hover {
+    color: #cccccc;
+}
+
+.secondary-sidebar-tab.active {
+    color: #ffffff;
+    border-right-color: #007acc;
+    background-color: #1e1e1e;
+}
+
+.secondary-sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    order: 1;
+}
+
+.secondary-panel {
+    margin-bottom: 20px;
+}
+
+.panel-content {
+    padding: 10px 0;
+}
+
 .section-title {
     font-size: 11px;
     font-weight: 600;
@@ -928,6 +1004,209 @@ body {
     word-wrap: break-word;
     font-size: 11px;
 }
+
+/* Midjourney Panel Styles */
+.mj-input-group {
+    margin-bottom: 12px;
+}
+
+.mj-label {
+    display: block;
+    font-size: 12px;
+    color: #cccccc;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.mj-textarea {
+    width: 100%;
+    background-color: #1e1e1e;
+    border: 1px solid #3c3c3c;
+    color: #cccccc;
+    padding: 8px 10px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    resize: vertical;
+    min-height: 80px;
+}
+
+.mj-textarea:focus {
+    border-color: #007acc;
+}
+
+.mj-settings {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.mj-setting-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mj-select {
+    background-color: #1e1e1e;
+    border: 1px solid #3c3c3c;
+    color: #cccccc;
+    padding: 6px 8px;
+    border-radius: 3px;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+}
+
+.mj-select:focus {
+    border-color: #007acc;
+}
+
+.mj-select:hover {
+    border-color: #4e4e52;
+}
+
+.mj-select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.mj-progress {
+    margin-bottom: 12px;
+}
+
+.mj-progress-bar {
+    width: 100%;
+    height: 4px;
+    background: #3c3c3c;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.mj-progress-fill {
+    height: 100%;
+    background: #007acc;
+    transition: width 0.3s ease;
+}
+
+.mj-progress-text {
+    font-size: 11px;
+    color: #858585;
+    text-align: center;
+}
+
+.mj-generate-button {
+    width: 100%;
+    background-color: #0e639c;
+    border: none;
+    color: #ffffff;
+    padding: 10px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background-color 0.2s;
+    margin-bottom: 16px;
+}
+
+.mj-generate-button:hover:not(:disabled) {
+    background-color: #1177bb;
+}
+
+.mj-generate-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.mj-history {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #2d2d30;
+}
+
+.mj-history-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #858585;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+}
+
+.mj-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.mj-history-item {
+    background-color: #1e1e1e;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    padding: 10px;
+    transition: border-color 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.mj-history-item:hover {
+    border-color: #007acc;
+}
+
+.mj-history-item.mj-status-generating {
+    border-left-color: #007acc;
+}
+
+.mj-history-item.mj-status-completed {
+    border-left-color: #4ec9b0;
+}
+
+.mj-history-item.mj-status-failed {
+    border-left-color: #f48771;
+}
+
+.mj-history-prompt {
+    font-size: 12px;
+    color: #cccccc;
+    margin-bottom: 4px;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+
+.mj-history-time {
+    font-size: 11px;
+    color: #858585;
+    margin-bottom: 8px;
+}
+
+.mj-history-status {
+    font-size: 11px;
+    color: #007acc;
+    margin-top: 4px;
+}
+
+.mj-history-error {
+    font-size: 11px;
+    color: #f48771;
+    margin-top: 4px;
+}
+
+.mj-history-image {
+    width: 100%;
+    border-radius: 3px;
+    background-color: #252526;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.mj-history-image:hover {
+    opacity: 0.85;
+}
+
 
 /* Log level colors (like colorama) */
 .log-info .log-level {
